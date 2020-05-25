@@ -1,0 +1,27 @@
+name: GifTools macOS Xcode
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Xcode build & test
+      run: |
+        git config --global url."https://github.com/".insteadOf git@github.com:
+        git config --global url."https://".insteadOf git://
+        git lfs install
+        git lfs pull
+        cmake -Bbuild_xcode -H. -G Xcode
+        xcodebuild -project build_xcode/TinyFixedAllocator.xcodeproj -configuration Release
+        cd build_xcode/Release
+        ./TinyFixedAllocatorTests
+        cd ../..
+
