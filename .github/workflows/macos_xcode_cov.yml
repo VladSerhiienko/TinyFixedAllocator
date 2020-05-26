@@ -1,4 +1,4 @@
-name: GifTools macOS Xcode
+name: GifTools macOS Xcode Coverage
 
 on:
   push:
@@ -13,18 +13,17 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Xcode build & test
+    - name: Xcode build & generate coverage
       run: |
         git config --global url."https://github.com/".insteadOf git@github.com:
         git config --global url."https://".insteadOf git://
         git lfs install
         git lfs pull
         pip install --user git+git://github.com/eddyxu/cpp-coveralls.git
-        cmake -Bbuild_xcode -H. -G Xcode -DTINY_FIXED_ALLOCATOR_BUILD_WITH_COVERAGE=TRUE
-        xcodebuild -project build_xcode/TinyFixedAllocator.xcodeproj -configuration Release
-        coveralls -h
-        coveralls --build-root build_xcode/Release --gcov-options '\-lp' \
-          -e build_xcode \
-          -e dependencies
+        mkdir build
+        cd build
+        cmake -DTINY_FIXED_ALLOCATOR_BUILD_WITH_COVERAGE=TRUE ..
+        make
+        coveralls --build-root build --gcov-options '\-lp'
         
 

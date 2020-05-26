@@ -42,6 +42,7 @@ if(NOT DEFINED TINY_FIXED_ALLOCATOR_BUILD_WITH_COVERAGE)
 endif()
 
 if (${TINY_FIXED_ALLOCATOR_BUILD_WITH_COVERAGE})
+    message(STATUS "Enabling coverage.")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g ")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs")
@@ -52,13 +53,7 @@ endif()
 get_filename_component(BUILD_FOLDER_SUFFIX ${CMAKE_BINARY_DIR} NAME)
 message(STATUS "BUILD_FOLDER_SUFFIX = ${BUILD_FOLDER_SUFFIX}")
 
-if (WIN32)
-    set(default_cmake_args -G "${CMAKE_GENERATOR}")
-elseif(APPLE)
-    set(default_cmake_args -G "Xcode") # -B${BUILD_FOLDER_SUFFIX} -H.)
-else()
-    set(default_cmake_args -B${BUILD_FOLDER_SUFFIX} -H.)
-endif()
+set(default_cmake_args -G "${CMAKE_GENERATOR}")
 
 #
 #
