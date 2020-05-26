@@ -1,0 +1,30 @@
+name: GifTools macOS Xcode
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Xcode build & test
+      run: |
+        git config --global url."https://github.com/".insteadOf git@github.com:
+        git config --global url."https://".insteadOf git://
+        git lfs install
+        git lfs pull
+        pip install --user git+git://github.com/eddyxu/cpp-coveralls.git
+        cmake -Bbuild_xcode -H. -G Xcode -DTINY_FIXED_ALLOCATOR_BUILD_WITH_COVERAGE=TRUE
+        xcodebuild -project build_xcode/TinyFixedAllocator.xcodeproj -configuration Release
+        coveralls -h
+        coveralls --build-root build_xcode/Release --gcov-options '\-lp' \
+          -e build_xcode \
+          -e dependencies
+        
+
