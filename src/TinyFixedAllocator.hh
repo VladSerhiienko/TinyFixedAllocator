@@ -274,16 +274,7 @@ struct FixedAllocator {
     }
 
     size_type totalOccupiedSpace() const {
-        typename LockPolicy::SharedLockGuard lockGuard(lock);
-
-        size_t totalFreeSize = 0;
-        auto rangeIt = freeBufferRanges.begin();
-        for (; rangeIt != freeBufferRanges.end(); ++rangeIt) {
-            auto& r = *rangeIt;
-            totalFreeSize += r.size;
-        }
-
-        return container.size() - totalFreeSize;
+        return container.size() - totalFreeSpace();
     }
 
     size_type totalFreeSpace() const {
@@ -301,19 +292,23 @@ struct FixedAllocator {
 
     void dumpState(std::ostream& out = std::cout) const {
         typename LockPolicy::SharedLockGuard lockGuard(lock);
-
+        
         out << ">>> ----------" << std::endl;
         out << __FUNCTION__ << ":" << std::endl;
         out << "wholeBuffer={ptr=" << (void*)(container.data()) << ", size=" << container.size() << "}" << std::endl;
         out << "FreeRanges=[";
+        
+        size_type totalFreeSize = 0;
         auto rangeIt = freeBufferRanges.begin();
         for (; rangeIt != freeBufferRanges.end(); ++rangeIt) {
             auto& r = *rangeIt;
+            totalFreeSize += r.size;
             out << "{offset=" << r.offset << ",size=" << r.size << "},";
         }
+        
         out << "]" << std::endl;
-        out << "occupied :" << totalOccupiedSpace() << std::endl;
-        out << "available:" << totalFreeSpace() << std::endl;
+        out << "occupied :" << (container.size() - totalFreeSize) << std::endl;
+        out << "available:" << (totalFreeSize) << std::endl;
         out << "<<< ----------" << std::endl;
     }
     

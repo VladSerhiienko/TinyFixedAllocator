@@ -40,13 +40,7 @@ endif()
 get_filename_component(BUILD_FOLDER_SUFFIX ${CMAKE_BINARY_DIR} NAME)
 message(STATUS "BUILD_FOLDER_SUFFIX = ${BUILD_FOLDER_SUFFIX}")
 
-if (WIN32)
-    set(default_cmake_args -G "${CMAKE_GENERATOR}")
-elseif(APPLE)
-    set(default_cmake_args -G "Xcode") # -B${BUILD_FOLDER_SUFFIX} -H.)
-else()
-    set(default_cmake_args -B${BUILD_FOLDER_SUFFIX} -H.)
-endif()
+set(default_cmake_args -G "${CMAKE_GENERATOR}")
 
 #
 #
