@@ -32,12 +32,13 @@ struct ByteSpan {
 };
 
 struct EmptyLock {
-    constexpr explicit EmptyLock(...) {}
+    constexpr explicit EmptyLock() = default;
     ~EmptyLock() = default;
 };
 
 struct EmptyLockGuard {
-    constexpr explicit EmptyLockGuard(...) {}
+    template <typename L>
+    constexpr explicit EmptyLockGuard(const L&) {}
     ~EmptyLockGuard() = default;
 };
 
@@ -99,20 +100,21 @@ struct FixedAllocator {
         typename LockPolicy::UniqueLockGuard lockGuard(lock);
         if (freeBufferRanges.empty()) { return {}; }
 
-        size += headerSize;
+        size_type chunkSize = size + headerSize;
 
         auto rangeIt = freeBufferRanges.begin();
         for (; rangeIt != freeBufferRanges.end(); ++rangeIt) {
             auto& r = *rangeIt;
 
-            if (r.size >= size) {
-                *(size_type*)(container.data() + r.offset) = size;
+            if (r.size >= chunkSize) {
+                uint8_t* headerPtr = container.data() + r.offset;
+                *reinterpret_cast<size_type*>(headerPtr) = chunkSize;
+                
+                uint8_t* allocPtr = headerPtr + headerSize;
+                defaults::ByteSpan occupiedSpan(allocPtr, size);
 
-                defaults::ByteSpan occupiedSpan(container.data() + r.offset + headerSize,
-                                              size - headerSize);
-
-                r.offset += size;
-                r.size -= size;
+                r.offset += chunkSize;
+                r.size -= chunkSize;
 
                 if (r.size == 0) { freeBufferRanges.erase(rangeIt); }
                 return occupiedSpan;
@@ -154,13 +156,15 @@ struct FixedAllocator {
                 r.offset = rr.offset;
                 r.size += rr.size;
                 
-                auto prevRangeIt = rangeIt - 1;
-                if (prevRangeIt != freeBufferRanges.end()) {
-                    auto& pr = *prevRangeIt;
-                    auto prEnd = pr.offset + pr.size;
-                    if (prEnd == r.offset) {
-                        pr.size += r.size;
-                        freeBufferRanges.erase(rangeIt);
+                if (rangeIt != freeBufferRanges.begin()) {
+                    auto prevRangeIt = rangeIt - 1;
+                    if (prevRangeIt != freeBufferRanges.end()) {
+                        auto& pr = *prevRangeIt;
+                        auto prEnd = pr.offset + pr.size;
+                        if (prEnd == r.offset) {
+                            pr.size += r.size;
+                            freeBufferRanges.erase(rangeIt);
+                        }
                     }
                 }
                 
@@ -243,15 +247,30 @@ struct FixedAllocator {
 
     void free(void* dataPtr) noexcept(ExceptionPolicy::NoexceptFree) {
         if (!dataPtr || container.empty()) { return; }
+        
+        auto c = container.data();
+        auto cEnd = c + container.size();
 
-        size_type offset = size_type(uintptr_t(dataPtr) - uintptr_t(container.data())) - headerSize;
-        size_type size = *(((size_type*)dataPtr) - 1);
-
-        if (!size || !freeRange({offset, size})) {
-            ExceptionPolicy::template raiseError<std::runtime_error>("Memory range is already free.");
+        if (dataPtr < c || dataPtr >= cEnd) {
+            ExceptionPolicy::template raiseError<std::runtime_error>("Memory range is out of bounds.");
         }
         
-        *(((size_type*)dataPtr) - 1) = 0;
+        uintptr_t allocAddress = reinterpret_cast<uintptr_t>(dataPtr);
+        uintptr_t containerDataAddress = reinterpret_cast<uintptr_t>(container.data());
+        uintptr_t offset = allocAddress - containerDataAddress;
+        
+        if (offset < headerSize) { assert(false); return; }
+        offset -= headerSize;
+        
+        uint8_t* headerPtr = reinterpret_cast<uint8_t*>(dataPtr) - headerSize;
+        
+        range_type r = {};
+        r.offset = static_cast<size_type>(offset);
+        r.size = static_cast<size_type>(*reinterpret_cast<size_type*>(headerPtr));
+
+        if (!r.size || !freeRange(r)) {
+            ExceptionPolicy::template raiseError<std::runtime_error>("Memory range is already free.");
+        }
     }
 
     size_type totalOccupiedSpace() const {
