@@ -13,7 +13,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Xcode build & generate coverage
+    - name: Make & Coveralls
       run: |
         git config --global url."https://github.com/".insteadOf git@github.com:
         git config --global url."https://".insteadOf git://
@@ -22,7 +22,7 @@ jobs:
         pip install --user git+git://github.com/eddyxu/cpp-coveralls.git
         mkdir build
         cd build
-        cmake -DTINY_FIXED_ALLOCATOR_BUILD_WITH_COVERAGE=TRUE ..
+        cmake -DCMAKE_BUILD_TYPE=Coverage -DTINY_FIXED_ALLOCATOR_BUILD_WITH_COVERAGE=TRUE ..
         make
         coveralls --build-root build --gcov-options '\-lp'
         

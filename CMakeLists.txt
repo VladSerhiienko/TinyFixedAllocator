@@ -127,15 +127,24 @@ add_dependencies(
 )
 
 # TODO(vserhiienko): Add Windows, Linux.
-target_link_libraries(
-    TinyFixedAllocatorTests
-    debug ${googletest_binary_dir}/lib/Debug/libgmockd.a
-    debug ${googletest_binary_dir}/lib/Debug/libgtestd.a
-    debug ${googletest_binary_dir}/lib/Debug/libgtest_maind.a
-    optimized ${googletest_binary_dir}/lib/Release/libgmock.a
-    optimized ${googletest_binary_dir}/lib/Release/libgtest.a
-    optimized ${googletest_binary_dir}/lib/Release/libgtest_main.a
-    )
+if (${TINY_FIXED_ALLOCATOR_BUILD_WITH_COVERAGE})
+    target_link_libraries(
+        TinyFixedAllocatorTests
+        ${googletest_binary_dir}/lib/libgmock.a
+        ${googletest_binary_dir}/lib/libgtest.a
+        ${googletest_binary_dir}/lib/libgtest_main.a
+        )
+else()
+    target_link_libraries(
+        TinyFixedAllocatorTests
+        debug ${googletest_binary_dir}/lib/Debug/libgmockd.a
+        debug ${googletest_binary_dir}/lib/Debug/libgtestd.a
+        debug ${googletest_binary_dir}/lib/Debug/libgtest_maind.a
+        optimized ${googletest_binary_dir}/lib/Release/libgmock.a
+        optimized ${googletest_binary_dir}/lib/Release/libgtest.a
+        optimized ${googletest_binary_dir}/lib/Release/libgtest_main.a
+        )
+endif()
 
 set_target_properties(
     TinyFixedAllocatorTests
