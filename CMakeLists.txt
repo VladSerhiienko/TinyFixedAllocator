@@ -37,6 +37,19 @@ elseif(COMPILER_SUPPORTS_CXX11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif()
 
+if(NOT DEFINED TINY_FIXED_ALLOCATOR_BUILD_WITH_COVERAGE)
+    set(TINY_FIXED_ALLOCATOR_BUILD_WITH_COVERAGE FALSE)
+endif()
+
+if (${TINY_FIXED_ALLOCATOR_BUILD_WITH_COVERAGE})
+    message(STATUS "Enabling coverage.")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g ")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftest-coverage")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+endif()
+
 get_filename_component(BUILD_FOLDER_SUFFIX ${CMAKE_BINARY_DIR} NAME)
 message(STATUS "BUILD_FOLDER_SUFFIX = ${BUILD_FOLDER_SUFFIX}")
 
@@ -114,15 +127,24 @@ add_dependencies(
 )
 
 # TODO(vserhiienko): Add Windows, Linux.
-target_link_libraries(
-    TinyFixedAllocatorTests
-    debug ${googletest_binary_dir}/lib/Debug/libgmockd.a
-    debug ${googletest_binary_dir}/lib/Debug/libgtestd.a
-    debug ${googletest_binary_dir}/lib/Debug/libgtest_maind.a
-    optimized ${googletest_binary_dir}/lib/Release/libgmock.a
-    optimized ${googletest_binary_dir}/lib/Release/libgtest.a
-    optimized ${googletest_binary_dir}/lib/Release/libgtest_main.a
-    )
+if (${TINY_FIXED_ALLOCATOR_BUILD_WITH_COVERAGE})
+    target_link_libraries(
+        TinyFixedAllocatorTests
+        ${googletest_binary_dir}/lib/libgmock.a
+        ${googletest_binary_dir}/lib/libgtest.a
+        ${googletest_binary_dir}/lib/libgtest_main.a
+        )
+else()
+    target_link_libraries(
+        TinyFixedAllocatorTests
+        debug ${googletest_binary_dir}/lib/Debug/libgmockd.a
+        debug ${googletest_binary_dir}/lib/Debug/libgtestd.a
+        debug ${googletest_binary_dir}/lib/Debug/libgtest_maind.a
+        optimized ${googletest_binary_dir}/lib/Release/libgmock.a
+        optimized ${googletest_binary_dir}/lib/Release/libgtest.a
+        optimized ${googletest_binary_dir}/lib/Release/libgtest_main.a
+        )
+endif()
 
 set_target_properties(
     TinyFixedAllocatorTests

@@ -1,0 +1,29 @@
+name: GifTools macOS Xcode Coverage
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Make & Coveralls
+      run: |
+        git config --global url."https://github.com/".insteadOf git@github.com:
+        git config --global url."https://".insteadOf git://
+        git lfs install
+        git lfs pull
+        pip install --user git+git://github.com/eddyxu/cpp-coveralls.git
+        mkdir build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Coverage -DTINY_FIXED_ALLOCATOR_BUILD_WITH_COVERAGE=TRUE ..
+        make
+        coveralls --build-root build --gcov-options '\-lp'
+        
+
